@@ -1,0 +1,39 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model GuildConfig {
+  id          String  @id
+  treeChannel String?
+  tagChannel  String?
+  treeBotId   String?
+  tree        Tree?
+}
+
+model Tree {
+  id      String @id @default(cuid())
+  guildId String @unique
+  name    String
+
+  guildConfig GuildConfig   @relation(fields: [guildId], references: [id])
+  wateredTree WateredTree[]
+}
+
+model WateredTree {
+  id                   String   @id @default(cuid())
+  treeId               String
+  wateredBy            String
+  wateredAt            DateTime @default(now())
+  nextWatering         DateTime
+  nextWateringNotified Boolean  @default(false)
+
+  tree Tree @relation(fields: [treeId], references: [id])
+}
