@@ -11,11 +11,14 @@ datasource db {
 }
 
 model GuildConfig {
-  id          String  @id
-  treeChannel String?
-  tagChannel  String?
-  treeBotId   String?
+  id           String  @id
+  treeChannel  String?
+  tagChannel   String?
+  treeBotId    String?
+  alertMessage String?
+
   tree        Tree?
+  wateredTree WateredTree[]
 }
 
 model Tree {
@@ -28,12 +31,16 @@ model Tree {
 }
 
 model WateredTree {
-  id                   String   @id @default(cuid())
-  treeId               String
-  wateredBy            String
-  wateredAt            DateTime @default(now())
-  nextWatering         DateTime
-  nextWateringNotified Boolean  @default(false)
+  id                            String   @id @default(cuid())
+  guildId                       String
+  treeId                        String
+  wateredBy                     String
+  wateredAt                     DateTime @default(now())
+  nextWatering                  DateTime
+  nextWateringNotified          Boolean  @default(false)
+  nextWateringNotifiedMessageId String?
+  createdAt                     DateTime @default(now())
 
-  tree Tree @relation(fields: [treeId], references: [id])
+  tree        Tree        @relation(fields: [treeId], references: [id])
+  guildConfig GuildConfig @relation(fields: [guildId], references: [id])
 }

@@ -1,6 +1,7 @@
-import { type Interaction, SlashCommandBuilder } from "discord.js"
+import { type GuildMember, type Interaction, PermissionsBitField, SlashCommandBuilder } from "discord.js"
 
 import { prisma } from "~/db"
+import { env } from "~/env"
 import { type BaseCommand } from "~/interfaces/base-command.interface"
 
 export class SetTreeCommand implements BaseCommand {
@@ -20,6 +21,28 @@ export class SetTreeCommand implements BaseCommand {
 
 	async execute(interaction: Interaction) {
 		if (!interaction.isCommand()) return
+
+		if (!interaction.member) {
+			await interaction.reply({
+				content: "You must be an administrator to use this command!",
+				ephemeral: true
+			})
+			return
+		}
+
+		const member = interaction.member as GuildMember
+
+		if (
+			!member.permissions.has(PermissionsBitField.Flags.Administrator) &&
+			!env.DISCORD_BOT_ADMINS.includes(member.id)
+		) {
+			await interaction.reply({
+				content: "You must be an administrator to use this command!",
+				ephemeral: true
+			})
+			return
+		}
+
 		const channel = interaction.options.get("channel")
 		const tagChannel = interaction.options.get("tag-channel")
 		const bot = interaction.options.get("bot")
@@ -40,26 +63,26 @@ export class SetTreeCommand implements BaseCommand {
 			update: {
 				treeChannel: `${channel.value}`,
 				tagChannel: `${tagChannel.value}`,
-				treeBotId: `${bot.value}`,
-				tree: {
-					create: {
-						name: `${treeName.value}`
-					},
-					update: {
-						name: `${treeName.value}`
-					}
-				}
+				treeBotId: `${bot.value}`
 			},
 			create: {
 				id: interaction.guildId,
 				treeChannel: `${channel.value}`,
 				tagChannel: `${tagChannel.value}`,
-				treeBotId: `${bot.value}`,
-				tree: {
-					create: {
-						name: `${treeName.value}`
-					}
-				}
+				treeBotId: `${bot.value}`
+			}
+		})
+
+		await prisma.tree.upsert({
+			where: {
+				guildId: interaction.guildId
+			},
+			update: {
+				name: `${treeName.value}`
+			},
+			create: {
+				name: `${treeName.value}`,
+				guildId: interaction.guildId
 			}
 		})
 

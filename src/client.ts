@@ -1,4 +1,4 @@
-import { Client, type ClientOptions, Collection, Events, GatewayIntentBits, REST, Routes } from "discord.js"
+import { Client, type ClientOptions, Collection, Events, GatewayIntentBits, Partials, REST, Routes } from "discord.js"
 
 import commands from "~/commands/index"
 import { env } from "~/env"
@@ -42,6 +42,7 @@ const registerCommands = async () => {
 export const createClient = async (options?: ClientOptions) => {
 	const client = new Client({
 		intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
+		partials: [Partials.Message, Partials.Channel],
 		...options
 	}) as CustomClient
 
@@ -58,11 +59,14 @@ export const createClient = async (options?: ClientOptions) => {
 	})
 
 	client.on(Events.MessageCreate, async (message) => {
-		await MessageEventHandler(message, client)
+		if (message.partial) {
+			console.log("Partial message received. Ignoring for now.", message.guildId, message.id)
+			return
+		} else {
+			await MessageEventHandler(message, client)
+		}
 	})
 	client.on(Events.MessageUpdate, async (oldMessage, newMessage) => {
-		// console.dir(oldMessage, { depth: null })
-		// console.dir(newMessage, { depth: null })
 		await MessageEventHandler(newMessage, client)
 	})
 
@@ -73,6 +77,11 @@ export const createClient = async (options?: ClientOptions) => {
 
 		if (!command) {
 			console.error(`No command matching ${interaction.commandName} was found.`)
+
+			await interaction.reply({
+				content: "There was an error while executing this command!",
+				ephemeral: true
+			})
 			return
 		}
 
