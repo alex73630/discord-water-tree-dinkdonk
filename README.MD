@@ -10,11 +10,17 @@ Made for [trash Discord](https://discord.com/invite/WjZhvVbFHM) (join us and hel
 
 ## Setup Instructions
 
+### Requirements
+- Node.js 20 or higher
+- A Discord bot token with the "Message Content Intent"
+- A PostgreSQL database
+
 1. Clone the repository
 2. Install the required packages with `npm install`
 3. Copy the `.env.example` file to `.env` and fill in the required values
-4. Initialize your database with `npm run db:push`
-5. Run the bot with `npm run start:dev` or `npm run start` (after building the project with `npm run build`)
+4. (Optional) Start a database with Docker using `docker compose up -d`
+5. Initialize your database with `npm run db:push`
+6. Run the bot with `npm run start:dev` or `npm run start` (after building the project with `npm run build`)
 
 It also has Docker but I haven't tested it yet, so I can't guarantee it works.
 
