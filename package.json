@@ -41,5 +41,9 @@
   },
   "ca8aMetadata": {
     "initVersion": "1.3.0"
+  },
+  "engines" : { 
+    "npm" : ">=10.2.4",
+    "node" : ">=20.9.0"
   }
 }
