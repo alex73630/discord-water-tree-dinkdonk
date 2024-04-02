@@ -1,3 +1,10 @@
+import {
+	type RedisClientType,
+	type RedisFunctions,
+	type RedisModules,
+	type RedisScripts,
+	createClient as createRedisClient
+} from "@redis/client"
 import { Client, type ClientOptions, Collection, Events, GatewayIntentBits, Partials, REST, Routes } from "discord.js"
 
 import commands from "~/commands/index"
@@ -39,7 +46,18 @@ const registerCommands = async () => {
 	}
 }
 
+let redis: RedisClientType<RedisModules, RedisFunctions, RedisScripts>
+
 export const createClient = async (options?: ClientOptions) => {
+	if (!redis) {
+		redis = await createRedisClient({
+			url: env.REDIS_URL
+		})
+			.on("error", (err) => console.log("Redis Client Error", err))
+			.on("connect", () => console.log("Redis Client Connected"))
+			.connect()
+	}
+
 	const client = new Client({
 		intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
 		partials: [Partials.Message, Partials.Channel],
@@ -59,6 +77,7 @@ export const createClient = async (options?: ClientOptions) => {
 	})
 
 	client.on(Events.MessageCreate, async (message) => {
+		console.log("New message received", message.guildId, message.id)
 		if (message.partial) {
 			console.log("Partial message received. Ignoring for now.", message.guildId, message.id)
 			return
@@ -67,6 +86,19 @@ export const createClient = async (options?: ClientOptions) => {
 		}
 	})
 	client.on(Events.MessageUpdate, async (oldMessage, newMessage) => {
+		console.log("Message updated", newMessage.guildId, newMessage.id, newMessage.editedAt)
+
+		// Poor man fix to the duplicate updateMessage event
+		const lastEdited = await redis.get(`last_edited:${newMessage.id}`)
+		if (lastEdited && newMessage.editedAt?.getTime().toString() === lastEdited) {
+			console.log("Message was already edited. Ignoring.", newMessage.guildId, newMessage.id)
+			return
+		}
+		await redis.set(`last_edited:${newMessage.id}`, newMessage.editedAt!.getTime().toString(), {
+			// Expire in 1 day
+			EX: 86400
+		})
+
 		await MessageEventHandler(newMessage, client)
 	})
 

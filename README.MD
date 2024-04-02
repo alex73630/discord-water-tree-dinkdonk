@@ -14,6 +14,7 @@ Made for [trash Discord](https://discord.com/invite/WjZhvVbFHM) (join us and hel
 - Node.js 20 or higher
 - A Discord bot token with the "Message Content Intent"
 - A PostgreSQL database
+- A Redis database
 
 1. Clone the repository
 2. Install the required packages with `npm install`

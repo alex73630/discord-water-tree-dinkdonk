@@ -24,7 +24,8 @@ export const env = createEnv({
 		DISCORD_CLIENT_ID: z.string().min(1),
 		// Required if NODE_ENV is "development"
 		DISCORD_GUILD_ID: z.string().optional(),
-		DISCORD_BOT_ADMINS: arrayFromString(z.string().min(1))
+		DISCORD_BOT_ADMINS: arrayFromString(z.string().min(1)),
+		REDIS_URL: z.string().min(1)
 	},
 	client: {},
 	runtimeEnv: process.env
