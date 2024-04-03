@@ -1,3 +1,4 @@
+import { type GuildConfig, type WateredTree } from "@prisma/client"
 import dayjs from "dayjs"
 import Duration from "dayjs/plugin/duration.js"
 import RelativeTime from "dayjs/plugin/relativeTime.js"
@@ -57,36 +58,8 @@ export const MessageEventHandler = async (message: Message<boolean> | PartialMes
 			if (guildConfig.tagChannel) {
 				// Ping in the tag channel
 				console.log("Pinging in the tag channel", guildConfig.id, guildConfig.tagChannel)
-				const tagChannel = await client.channels.fetch(guildConfig.tagChannel)
 
-				if (tagChannel?.isTextBased()) {
-					const embed = new EmbedBuilder()
-						.setTitle("Tree needs watering!")
-						.addFields([
-							{
-								name: "Tree waiting for water since",
-								value: `<t:${Math.floor(lastWater.nextWatering.getTime() / 1000)}:R>`
-							},
-							{ name: "Last watered by", value: `<@${lastWateredBy}>` }
-						])
-						.setColor(Colors.Red)
-
-					const message = await tagChannel.send({
-						embeds: [embed]
-					})
-
-					if (message) {
-						await prisma.wateredTree.update({
-							where: {
-								id: lastWater.id
-							},
-							data: {
-								nextWateringNotified: true,
-								nextWateringNotifiedMessageId: message.id
-							}
-						})
-					}
-				}
+				await sendTagMessage(guildConfig, client, lastWater)
 			}
 		} else {
 			const timestampRegex = /<t:(\d+):R>/
@@ -124,9 +97,7 @@ export const MessageEventHandler = async (message: Message<boolean> | PartialMes
 				const tagChannel = await client.channels.fetch(guildConfig.tagChannel!)
 
 				if (tagChannel?.isTextBased()) {
-					const message = await tagChannel.messages.fetch(
-						lastWateredTree.nextWateringNotifiedMessageId as string
-					)
+					const message = await tagChannel.messages.fetch(lastWateredTree.nextWateringNotifiedMessageId)
 
 					if (message) {
 						const timeBetweenWatingAndWater = dayjs
@@ -154,4 +125,44 @@ export const MessageEventHandler = async (message: Message<boolean> | PartialMes
 			}
 		}
 	}
+}
+
+export async function sendTagMessage(guildConfig: GuildConfig, client: CustomClient, lastWater: WateredTree) {
+	if (!guildConfig.tagChannel) return
+
+	const tagChannel = await client.channels.fetch(guildConfig.tagChannel)
+
+	if (tagChannel?.isTextBased()) {
+		const lastWateredBy = lastWater.wateredBy
+		const embed = new EmbedBuilder()
+			.setTitle("Tree needs watering!")
+			.addFields([
+				{
+					name: "Tree waiting for water since",
+					value: `<t:${Math.floor(lastWater.nextWatering.getTime() / 1000)}:R>`
+				},
+				{ name: "Last watered by", value: `<@${lastWateredBy}>` }
+			])
+			.setColor(Colors.Red)
+
+		const message = await tagChannel.send({
+			embeds: [embed]
+		})
+
+		if (message) {
+			await prisma.wateredTree.update({
+				where: {
+					id: lastWater.id
+				},
+				data: {
+					nextWateringNotified: true,
+					nextWateringNotifiedMessageId: message.id
+				}
+			})
+		}
+
+		return message
+	}
+
+	return null
 }
