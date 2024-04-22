@@ -28,6 +28,7 @@ model Tree {
 
   guildConfig GuildConfig   @relation(fields: [guildId], references: [id])
   wateredTree WateredTree[]
+  WaitedTime  WaitedTime[]
 }
 
 model WateredTree {
@@ -39,8 +40,23 @@ model WateredTree {
   nextWatering                  DateTime
   nextWateringNotified          Boolean  @default(false)
   nextWateringNotifiedMessageId String?
+  nextWateredTreeId             String?  @unique
   createdAt                     DateTime @default(now())
 
+  tree                Tree         @relation(fields: [treeId], references: [id])
+  guildConfig         GuildConfig  @relation(fields: [guildId], references: [id])
+  nextWateredTree     WateredTree? @relation("LinkedWateredTree", fields: [nextWateredTreeId], references: [id])
+  previousWateredTree WateredTree? @relation("LinkedWateredTree")
+  waitedTime          WaitedTime[]
+}
+
+model WaitedTime {
+  id            String @id @default(cuid())
+  guildId       String
+  treeId        String
+  waitDelta     BigInt
+  wateredTreeId String
+
   tree        Tree        @relation(fields: [treeId], references: [id])
-  guildConfig GuildConfig @relation(fields: [guildId], references: [id])
+  wateredTree WateredTree @relation(fields: [wateredTreeId], references: [id])
 }

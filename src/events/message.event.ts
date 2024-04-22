@@ -93,23 +93,42 @@ export const MessageEventHandler = async (message: Message<boolean> | PartialMes
 				}
 			})
 
-			if (lastWateredTree?.nextWateringNotifiedMessageId) {
+			if (!lastWateredTree) return
+
+			await prisma.wateredTree.update({
+				where: {
+					id: lastWateredTree.id
+				},
+				data: {
+					nextWateredTreeId: wateredTree.id
+				}
+			})
+			const timeBetweenWatingAndWater = dayjs.duration(
+				dayjs(lastWateredTree.nextWatering).diff(dayjs(wateredTree.wateredAt))
+			)
+
+			await prisma.waitedTime.create({
+				data: {
+					guildId: guildConfig.id,
+					treeId: tree.id,
+					wateredTreeId: wateredTree.id,
+					waitDelta: timeBetweenWatingAndWater.asSeconds()
+				}
+			})
+
+			if (lastWateredTree.nextWateringNotifiedMessageId) {
 				const tagChannel = await client.channels.fetch(guildConfig.tagChannel!)
 
 				if (tagChannel?.isTextBased()) {
 					const message = await tagChannel.messages.fetch(lastWateredTree.nextWateringNotifiedMessageId)
 
 					if (message) {
-						const timeBetweenWatingAndWater = dayjs
-							.duration(dayjs(lastWateredTree.nextWatering).diff(dayjs(wateredTree.wateredAt)))
-							.humanize()
-
 						const embed = new EmbedBuilder()
 							.setTitle("Tree has been watered!")
 							.addFields([
 								{
 									name: "Tree waited water for",
-									value: `${timeBetweenWatingAndWater}`
+									value: `${timeBetweenWatingAndWater.humanize()}`
 								},
 								{
 									name: "Watered by",
