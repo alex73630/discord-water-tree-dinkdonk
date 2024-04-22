@@ -52,10 +52,10 @@ export class StatsCommand implements BaseCommand {
 				waitedTimeTotal: number
 			}[]
 		>`
-			SELECT treeId, SUM(waitDelta) as waitedTimeTotal
-			FROM WaitedTime
-			WHERE treeId = ${tree.id}
-			GROUP BY treeId`
+			SELECT "treeId", SUM("waitDelta") as waitedTimeTotal
+			FROM "WaitedTime"
+			WHERE "treeId" = ${tree.id}
+			GROUP BY "treeId"`
 
 		const waitedTimeTotal = waitedTimeTotalRaw[0]
 		let waitedTimeTotalHumanized = "0 seconds"
@@ -69,7 +69,6 @@ export class StatsCommand implements BaseCommand {
 		const embed = new EmbedBuilder()
 			.setColor(Colors.Blue)
 			.setTitle(`Stats for ${tree.name}`)
-			.setDescription(`Stats for the tree ${tree.name}`)
 			.addFields([
 				{
 					name: "Watered tree notified count",
