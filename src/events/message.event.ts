@@ -112,7 +112,7 @@ export const MessageEventHandler = async (message: Message<boolean> | PartialMes
 					guildId: guildConfig.id,
 					treeId: tree.id,
 					wateredTreeId: wateredTree.id,
-					waitDelta: timeBetweenWatingAndWater.asSeconds()
+					waitDelta: BigInt(timeBetweenWatingAndWater.asSeconds())
 				}
 			})
 
