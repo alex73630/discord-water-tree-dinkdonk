@@ -1,3 +1,5 @@
+import { parse } from "path"
+
 import { type GuildConfig, type WateredTree } from "@prisma/client"
 import dayjs from "dayjs"
 import Duration from "dayjs/plugin/duration.js"
@@ -107,12 +109,14 @@ export const MessageEventHandler = async (message: Message<boolean> | PartialMes
 				dayjs(lastWateredTree.nextWatering).diff(dayjs(wateredTree.wateredAt))
 			)
 
+			const waitedTime = Math.round(timeBetweenWatingAndWater.asSeconds())
+
 			await prisma.waitedTime.create({
 				data: {
 					guildId: guildConfig.id,
 					treeId: tree.id,
 					wateredTreeId: wateredTree.id,
-					waitDelta: BigInt(timeBetweenWatingAndWater.asSeconds())
+					waitDelta: BigInt(waitedTime < 0 ? -waitedTime : waitedTime)
 				}
 			})
 
