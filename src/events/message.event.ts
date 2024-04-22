@@ -1,10 +1,9 @@
-import { parse } from "path"
-
 import { type GuildConfig, type WateredTree } from "@prisma/client"
 import dayjs from "dayjs"
 import Duration from "dayjs/plugin/duration.js"
 import RelativeTime from "dayjs/plugin/relativeTime.js"
 import { Colors, EmbedBuilder, type Message, type PartialMessage } from "discord.js"
+import humanizeDuration from "humanize-duration"
 
 import { prisma } from "~/db"
 import { type CustomClient } from "~/interfaces/custom-client.interface"
@@ -132,7 +131,7 @@ export const MessageEventHandler = async (message: Message<boolean> | PartialMes
 							.addFields([
 								{
 									name: "Tree waited water for",
-									value: `${timeBetweenWatingAndWater.humanize()}`
+									value: `${humanizeDuration(timeBetweenWatingAndWater.asMilliseconds(), { round: true, conjunction: " and ", serialComma: false })}`
 								},
 								{
 									name: "Watered by",

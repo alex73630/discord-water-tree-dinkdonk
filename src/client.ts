@@ -65,26 +65,36 @@ export const createClient = async (options?: ClientOptions) => {
 	})
 
 	client.on(Events.MessageCreate, async (message) => {
-		console.log("New message received", message.guildId, message.id)
-		if (message.partial) {
-			console.log("Partial message received. Ignoring for now.", message.guildId, message.id)
-			return
-		} else {
-			await MessageEventHandler(message, client)
+		try {
+			console.log("New message received", message.guildId, message.id)
+			if (message.partial) {
+				console.log("Partial message received. Ignoring for now.", message.guildId, message.id)
+				return
+			} else {
+				await MessageEventHandler(message, client)
+			}
+		} catch (error) {
+			console.error("Error while handling new message", error)
 		}
 	})
 	client.on(Events.MessageUpdate, async (oldMessage, newMessage) => {
-		console.log("Message updated", newMessage.guildId, newMessage.id, newMessage.editedAt)
+		try {
+			console.log("Message updated", newMessage.guildId, newMessage.id, newMessage.editedAt)
 
-		// "Poor" man fix to the duplicate updateMessage event
-		const lastEdited = client.editedMessagesTracker.get(newMessage.id)
-		if (lastEdited && newMessage.editedAt?.getTime().toString() === lastEdited) {
-			console.log("Message was already edited. Ignoring.", newMessage.guildId, newMessage.id)
-			return
+			// "Poor" man fix to the duplicate updateMessage event
+			const lastEdited = client.editedMessagesTracker.get(newMessage.id)
+			if (lastEdited && newMessage.editedAt?.getTime().toString() === lastEdited) {
+				console.log("Message was already edited. Ignoring.", newMessage.guildId, newMessage.id)
+				return
+			}
+			if (newMessage.editedAt) {
+				client.editedMessagesTracker.set(newMessage.id, newMessage.editedAt.getTime().toString())
+			}
+
+			await MessageEventHandler(newMessage, client)
+		} catch (error) {
+			console.error("Error while handling updated message", error)
 		}
-		client.editedMessagesTracker.set(newMessage.id, newMessage.editedAt!.getTime().toString())
-
-		await MessageEventHandler(newMessage, client)
 	})
 
 	client.on(Events.InteractionCreate, async (interaction) => {

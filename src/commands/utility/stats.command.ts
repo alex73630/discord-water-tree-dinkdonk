@@ -1,5 +1,5 @@
-import dayjs from "dayjs"
 import { Colors, EmbedBuilder, type Interaction, SlashCommandBuilder } from "discord.js"
+import humanizeDuration from "humanize-duration"
 
 import { prisma } from "~/db"
 import { type BaseCommand } from "~/interfaces/base-command.interface"
@@ -52,7 +52,7 @@ export class StatsCommand implements BaseCommand {
 				waitedTimeTotal: number
 			}[]
 		>`
-			SELECT "treeId", SUM("waitDelta") as waitedTimeTotal
+			SELECT "treeId", SUM("waitDelta") as "waitedTimeTotal"
 			FROM "WaitedTime"
 			WHERE "treeId" = ${tree.id}
 			GROUP BY "treeId"`
@@ -60,10 +60,17 @@ export class StatsCommand implements BaseCommand {
 		const waitedTimeTotal = waitedTimeTotalRaw[0]
 		let waitedTimeTotalHumanized = "0 seconds"
 
+		console.log("waitedTimeTotal", waitedTimeTotal)
+
 		if (waitedTimeTotal) {
 			const { waitedTimeTotal: time } = waitedTimeTotal
-			const waitedTimeTotalDuration = dayjs.duration(time, "seconds")
-			waitedTimeTotalHumanized = waitedTimeTotalDuration.humanize()
+			console.log("waitedTimeTotal", time)
+			const waitedTimeTotalDuration = humanizeDuration(time * 1000, {
+				round: true,
+				conjunction: " and ",
+				serialComma: false
+			})
+			waitedTimeTotalHumanized = waitedTimeTotalDuration
 		}
 
 		const embed = new EmbedBuilder()
