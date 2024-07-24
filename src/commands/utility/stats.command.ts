@@ -1,16 +1,56 @@
-import { Colors, EmbedBuilder, type Interaction, SlashCommandBuilder } from "discord.js"
+import {
+	Colors,
+	EmbedBuilder,
+	type GuildMember,
+	type Interaction,
+	PermissionsBitField,
+	SlashCommandBuilder
+} from "discord.js"
 import humanizeDuration from "humanize-duration"
 
 import { prisma } from "~/db"
+import { env } from "~/env"
 import { type BaseCommand } from "~/interfaces/base-command.interface"
 
 export class StatsCommand implements BaseCommand {
-	public data = new SlashCommandBuilder().setName("stats").setDescription("Get the tracked stats of the tree.")
+	public data = new SlashCommandBuilder()
+		.setName("stats")
+		.setDescription("Get the tracked stats of the tree.")
+		.addStringOption((option) =>
+			option.setName("guildId").setDescription("The guild id of the tree.").setRequired(false)
+		)
 
 	async execute(interaction: Interaction) {
 		if (!interaction.isCommand()) return
 
-		const guildId = interaction.guildId
+		let guildId = interaction.guildId
+
+		const guildIdInput = interaction.options.get("guildId")
+
+		if (guildIdInput?.value) {
+			if (!interaction.member) {
+				await interaction.reply({
+					content: "You must be an administrator to use this command!",
+					ephemeral: true
+				})
+				return
+			}
+
+			const member = interaction.member as GuildMember
+
+			if (
+				!member.permissions.has(PermissionsBitField.Flags.Administrator) &&
+				!env.DISCORD_BOT_ADMINS.includes(member.id)
+			) {
+				await interaction.reply({
+					content: "You must be an administrator to use this command!",
+					ephemeral: true
+				})
+				return
+			}
+
+			guildId = guildIdInput.value as string
+		}
 
 		if (!guildId) {
 			await interaction.reply({
@@ -73,6 +113,33 @@ export class StatsCommand implements BaseCommand {
 			waitedTimeTotalHumanized = waitedTimeTotalDuration
 		}
 
+		const waitedTimeAverageRaw = await prisma.$queryRaw<
+			{
+				treeId: number
+				averageWaitedTime: number
+			}[]
+		>`
+			SELECT "treeId", AVG("waitDelta") as "averageWaitedTime"
+			FROM "WaitedTime"
+			WHERE "treeId" = ${tree.id}
+			GROUP BY "treeId"`
+
+		const averageWaitedTime = waitedTimeAverageRaw[0]
+		let averageWaitedTimeHumanized = "0 seconds"
+
+		console.log("averageWaitedTime", averageWaitedTime)
+
+		if (averageWaitedTime) {
+			const { averageWaitedTime: time } = averageWaitedTime
+			console.log("averageWaitedTime", time)
+			const averageWaitedTimeDuration = humanizeDuration(time * 1000, {
+				round: true,
+				conjunction: " and ",
+				serialComma: false
+			})
+			averageWaitedTimeHumanized = averageWaitedTimeDuration
+		}
+
 		const embed = new EmbedBuilder()
 			.setColor(Colors.Blue)
 			.setTitle(`Stats for ${tree.name}`)
@@ -84,6 +151,10 @@ export class StatsCommand implements BaseCommand {
 				{
 					name: "Total tracked waited time",
 					value: waitedTimeTotalHumanized
+				},
+				{
+					name: "Average tracked waited time",
+					value: averageWaitedTimeHumanized
 				}
 			])
 
