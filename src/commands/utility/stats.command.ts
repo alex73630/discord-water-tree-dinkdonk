@@ -17,7 +17,7 @@ export class StatsCommand implements BaseCommand {
 		.setName("stats")
 		.setDescription("Get the tracked stats of the tree.")
 		.addStringOption((option) =>
-			option.setName("guildId").setDescription("The guild id of the tree.").setRequired(false)
+			option.setName("guild-id").setDescription("The guild id of the tree.").setRequired(false)
 		)
 
 	async execute(interaction: Interaction) {
