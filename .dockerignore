@@ -4,3 +4,4 @@ docker-compose.yaml
 Dockerfile
 node_modules
 dist
+prisma/client

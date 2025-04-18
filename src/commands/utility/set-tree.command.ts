@@ -56,6 +56,16 @@ export class SetTreeCommand implements BaseCommand {
 			return
 		}
 
+		const tagChannelItem = await interaction.client.channels.fetch(tagChannel.value as string)
+
+		if (tagChannelItem && !tagChannelItem.isSendable()) {
+			await interaction.reply({
+				content: "The tag channel must be a text channel and bot must have permission to send messages in!",
+				ephemeral: true
+			})
+			return
+		}
+
 		await prisma.guildConfig.upsert({
 			where: {
 				id: interaction.guildId

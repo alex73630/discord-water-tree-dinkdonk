@@ -13,7 +13,7 @@ export async function main() {
 	client = await createClient()
 
 	// Remove old edited messages from the tracker to save memory
-	const EditedMessageTrackerJob = Cron("0 */5 * * * *", () => {
+	const EditedMessageTrackerJob = new Cron("0 */5 * * * *", () => {
 		if (!client || !client.isReady()) return
 
 		const now = Date.now()
@@ -27,7 +27,7 @@ export async function main() {
 	})
 
 	// Check for trees needing water every 30s
-	const WaterTreeCheckJob = Cron("*/30 * * * * *", async () => {
+	const WaterTreeCheckJob = new Cron("*/30 * * * * *", async () => {
 		if (!client || !client.isReady()) return
 
 		const fireDate = Date.now()

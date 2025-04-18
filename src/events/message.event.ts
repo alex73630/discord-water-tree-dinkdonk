@@ -152,9 +152,10 @@ export const MessageEventHandler = async (message: Message<boolean> | PartialMes
 export async function sendTagMessage(guildConfig: GuildConfig, client: CustomClient, lastWater: WateredTree) {
 	if (!guildConfig.tagChannel) return
 
+	console.log("Sending tag message", guildConfig.id, guildConfig.tagChannel)
 	const tagChannel = await client.channels.fetch(guildConfig.tagChannel)
 
-	if (tagChannel?.isTextBased()) {
+	if (tagChannel?.isTextBased() && tagChannel.isSendable()) {
 		const lastWateredBy = lastWater.wateredBy
 		const embed = new EmbedBuilder()
 			.setTitle("Tree needs watering!")

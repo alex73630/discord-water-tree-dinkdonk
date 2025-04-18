@@ -1,6 +1,6 @@
-import { type Interaction, type SlashCommandBuilder } from "discord.js"
+import { SlashCommandOptionsOnlyBuilder, type Interaction, type SlashCommandBuilder } from "discord.js"
 
 export interface BaseCommand {
-	data: Omit<SlashCommandBuilder, "addSubcommand" | "addSubcommandGroup">
+	data: SlashCommandOptionsOnlyBuilder
 	execute: (interaction: Interaction) => Promise<void> | void
 }

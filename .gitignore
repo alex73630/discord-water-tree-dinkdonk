@@ -143,3 +143,6 @@ dist
 
 # Prisma SQLite DB
 *.db
+
+# Prisma Client
+prisma/client
