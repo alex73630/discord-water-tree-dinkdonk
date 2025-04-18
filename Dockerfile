@@ -5,7 +5,7 @@ FROM base AS deps
 ENV CI=true
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --ommit=dev
+RUN npm ci --ommit=dev --ignore-scripts
 
 
 FROM deps AS builder
