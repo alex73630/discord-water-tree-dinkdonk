@@ -140,6 +140,60 @@ export class StatsCommand implements BaseCommand {
 			averageWaitedTimeHumanized = averageWaitedTimeDuration
 		}
 
+		const waitedTimeAverage30DaysRaw = await prisma.$queryRaw<
+			{
+				treeId: number
+				averageWaitedTime: number
+			}[]
+		>`
+			SELECT "treeId", AVG("waitDelta") as "averageWaitedTime"
+			FROM "WaitedTime"
+			WHERE "treeId" = ${tree.id} AND "createdAt" >= NOW() - INTERVAL '30 days'
+			GROUP BY "treeId"`
+
+		const waitedTimeAverage30Days = waitedTimeAverage30DaysRaw[0]
+		let waitedTimeAverage30DaysHumanized = "0 seconds"
+
+		console.log("waitedTimeAverage30Days", waitedTimeAverage30Days)
+
+		if (waitedTimeAverage30Days) {
+			const { averageWaitedTime: time } = waitedTimeAverage30Days
+			console.log("waitedTimeAverage30Days", time)
+			const waitedTimeAverage30DaysDuration = humanizeDuration(time * 1000, {
+				round: true,
+				conjunction: " and ",
+				serialComma: false
+			})
+			waitedTimeAverage30DaysHumanized = waitedTimeAverage30DaysDuration
+		}
+
+		const waitedTimeAverage7DaysRaw = await prisma.$queryRaw<
+			{
+				treeId: number
+				averageWaitedTime: number
+			}[]
+		>`
+			SELECT "treeId", AVG("waitDelta") as "averageWaitedTime"
+			FROM "WaitedTime"
+			WHERE "treeId" = ${tree.id} AND "createdAt" >= NOW() - INTERVAL '7 days'
+			GROUP BY "treeId"`
+
+		const waitedTimeAverage7Days = waitedTimeAverage7DaysRaw[0]
+		let waitedTimeAverage7DaysHumanized = "0 seconds"
+
+		console.log("waitedTimeAverage7Days", waitedTimeAverage7Days)
+
+		if (waitedTimeAverage7Days) {
+			const { averageWaitedTime: time } = waitedTimeAverage7Days
+			console.log("waitedTimeAverage7Days", time)
+			const waitedTimeAverage7DaysDuration = humanizeDuration(time * 1000, {
+				round: true,
+				conjunction: " and ",
+				serialComma: false
+			})
+			waitedTimeAverage7DaysHumanized = waitedTimeAverage7DaysDuration
+		}
+
 		const embed = new EmbedBuilder()
 			.setColor(Colors.Blue)
 			.setTitle(`Stats for ${tree.name}`)
@@ -155,6 +209,14 @@ export class StatsCommand implements BaseCommand {
 				{
 					name: "Average tracked waited time",
 					value: averageWaitedTimeHumanized
+				},
+				{
+					name: "Average tracked waited time (last 30 days)",
+					value: waitedTimeAverage30DaysHumanized
+				},
+				{
+					name: "Average tracked waited time (last 7 days)",
+					value: waitedTimeAverage7DaysHumanized
 				}
 			])
 
