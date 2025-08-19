@@ -146,11 +146,23 @@ export class StatsCommand implements BaseCommand {
 				averageWaitedTime: number
 			}[]
 		>`
-			SELECT wtr."treeId", AVG(wt."waitDelta") as "averageWaitedTime"
-			FROM "WateredTree" wtr
-			JOIN "WaitedTime" wt ON wtr."treeId" = wt."treeId"
-			WHERE wtr."treeId" = ${tree.id} AND wtr."createdAt" >= NOW() - INTERVAL '30 days'
-			GROUP BY wtr."treeId"`
+			SELECT
+				wt."treeId",
+				AVG(wt."waitDelta") AS "averageWaitedTime"
+			FROM
+				"WaitedTime" AS wt
+				INNER JOIN (
+					SELECT
+						id
+					FROM
+						"WateredTree"
+					WHERE
+						"treeId" = ${tree.id} AND "createdAt" >= NOW() - INTERVAL '30 days'
+				) AS wtr ON wt."wateredTreeId" = wtr.id
+			WHERE
+				wt."treeId" = ${tree.id}
+			GROUP BY
+				wt."treeId";`
 
 		const waitedTimeAverage30Days = waitedTimeAverage30DaysRaw[0]
 		let waitedTimeAverage30DaysHumanized = "0 seconds"
@@ -174,11 +186,23 @@ export class StatsCommand implements BaseCommand {
 				averageWaitedTime: number
 			}[]
 		>`
-			SELECT wtr."treeId", AVG(wt."waitDelta") as "averageWaitedTime"
-			FROM "WateredTree" wtr
-			JOIN "WaitedTime" wt ON wtr."treeId" = wt."treeId"
-			WHERE wtr."treeId" = ${tree.id} AND wtr."createdAt" >= NOW() - INTERVAL '7 days'
-			GROUP BY wtr."treeId"`
+			SELECT
+				wt."treeId",
+				AVG(wt."waitDelta") AS "averageWaitedTime"
+			FROM
+				"WaitedTime" AS wt
+				INNER JOIN (
+					SELECT
+						id
+					FROM
+						"WateredTree"
+					WHERE
+						"treeId" = ${tree.id} AND "createdAt" >= NOW() - INTERVAL '7 days'
+				) AS wtr ON wt."wateredTreeId" = wtr.id
+			WHERE
+				wt."treeId" = ${tree.id}
+			GROUP BY
+				wt."treeId";`
 
 		const waitedTimeAverage7Days = waitedTimeAverage7DaysRaw[0]
 		let waitedTimeAverage7DaysHumanized = "0 seconds"
