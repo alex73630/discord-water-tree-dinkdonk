@@ -148,8 +148,8 @@ export class StatsCommand implements BaseCommand {
 		>`
 			SELECT wtr."treeId", AVG(wt."waitDelta") as "averageWaitedTime"
 			FROM "WateredTree" wtr
-			WHERE wtr."treeId" = ${tree.id} AND wtr."createdAt" >= NOW() - INTERVAL '30 days'
 			JOIN "WaitedTime" wt ON wtr."treeId" = wt."treeId"
+			WHERE wtr."treeId" = ${tree.id} AND wtr."createdAt" >= NOW() - INTERVAL '30 days'
 			GROUP BY wtr."treeId"`
 
 		const waitedTimeAverage30Days = waitedTimeAverage30DaysRaw[0]
@@ -176,8 +176,8 @@ export class StatsCommand implements BaseCommand {
 		>`
 			SELECT wtr."treeId", AVG(wt."waitDelta") as "averageWaitedTime"
 			FROM "WateredTree" wtr
-			WHERE wtr."treeId" = ${tree.id} AND wtr."createdAt" >= NOW() - INTERVAL '7 days'
 			JOIN "WaitedTime" wt ON wtr."treeId" = wt."treeId"
+			WHERE wtr."treeId" = ${tree.id} AND wtr."createdAt" >= NOW() - INTERVAL '7 days'
 			GROUP BY wtr."treeId"`
 
 		const waitedTimeAverage7Days = waitedTimeAverage7DaysRaw[0]
