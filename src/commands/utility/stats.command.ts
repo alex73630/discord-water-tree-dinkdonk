@@ -113,7 +113,7 @@ export class StatsCommand implements BaseCommand {
 			waitedTimeTotalHumanized = waitedTimeTotalDuration
 		}
 
-		const waitedTimeAverageRaw = await prisma.$queryRaw<
+		const averageWaitedTimeRaw = await prisma.$queryRaw<
 			{
 				treeId: number
 				averageWaitedTime: number
@@ -124,7 +124,7 @@ export class StatsCommand implements BaseCommand {
 			WHERE "treeId" = ${tree.id}
 			GROUP BY "treeId"`
 
-		const averageWaitedTime = waitedTimeAverageRaw[0]
+		const averageWaitedTime = averageWaitedTimeRaw[0]
 		let averageWaitedTimeHumanized = "0 seconds"
 
 		console.log("averageWaitedTime", averageWaitedTime)
@@ -146,10 +146,11 @@ export class StatsCommand implements BaseCommand {
 				averageWaitedTime: number
 			}[]
 		>`
-			SELECT "treeId", AVG("waitDelta") as "averageWaitedTime"
-			FROM "WaitedTime"
-			WHERE "treeId" = ${tree.id} AND "createdAt" >= NOW() - INTERVAL '30 days'
-			GROUP BY "treeId"`
+			SELECT wtr."treeId", AVG(wt."waitDelta") as "averageWaitedTime"
+			FROM "WateredTree" wtr
+			WHERE wtr."treeId" = ${tree.id} AND wtr."createdAt" >= NOW() - INTERVAL '30 days'
+			JOIN "WaitedTime" wt ON wtr."treeId" = wt."treeId"
+			GROUP BY wtr."treeId"`
 
 		const waitedTimeAverage30Days = waitedTimeAverage30DaysRaw[0]
 		let waitedTimeAverage30DaysHumanized = "0 seconds"
@@ -173,10 +174,11 @@ export class StatsCommand implements BaseCommand {
 				averageWaitedTime: number
 			}[]
 		>`
-			SELECT "treeId", AVG("waitDelta") as "averageWaitedTime"
-			FROM "WaitedTime"
-			WHERE "treeId" = ${tree.id} AND "createdAt" >= NOW() - INTERVAL '7 days'
-			GROUP BY "treeId"`
+			SELECT wtr."treeId", AVG(wt."waitDelta") as "averageWaitedTime"
+			FROM "WateredTree" wtr
+			WHERE wtr."treeId" = ${tree.id} AND wtr."createdAt" >= NOW() - INTERVAL '7 days'
+			JOIN "WaitedTime" wt ON wtr."treeId" = wt."treeId"
+			GROUP BY wtr."treeId"`
 
 		const waitedTimeAverage7Days = waitedTimeAverage7DaysRaw[0]
 		let waitedTimeAverage7DaysHumanized = "0 seconds"

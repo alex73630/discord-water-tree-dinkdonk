@@ -48,7 +48,7 @@ model WateredTree {
   guildConfig         GuildConfig  @relation(fields: [guildId], references: [id])
   nextWateredTree     WateredTree? @relation("LinkedWateredTree", fields: [nextWateredTreeId], references: [id])
   previousWateredTree WateredTree? @relation("LinkedWateredTree")
-  waitedTime          WaitedTime[]
+  waitedTime          WaitedTime?  @relation(fields: [id], references: [wateredTreeId])
 }
 
 model WaitedTime {
