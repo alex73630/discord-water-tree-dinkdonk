@@ -1,20 +1,23 @@
-FROM node:22-alpine AS base
+FROM node:24-alpine AS base
+RUN corepack enable && corepack prepare yarn@4.12.0 --activate
 
 FROM base AS deps
 
 ENV CI=true
 WORKDIR /app
-COPY package*.json ./
-RUN npm ci --ommit=dev --ignore-scripts
+COPY package.json yarn.lock .yarnrc.yml ./
+COPY .yarn ./.yarn
+RUN node -e "let pkg=require('./package.json'); delete pkg.scripts.postinstall; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2))"
+RUN YARN_ENABLE_SCRIPTS=0 yarn workspaces focus --production
 
 
 FROM deps AS builder
 
 WORKDIR /app
 COPY . .
-RUN npm ci
-RUN npx prisma generate
-RUN npm run build
+RUN yarn install --immutable
+RUN yarn prisma generate
+RUN yarn run build
 
 FROM base AS runner
 

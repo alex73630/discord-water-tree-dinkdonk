@@ -19,7 +19,7 @@
   "devDependencies": {
     "@types/eslint": "^8.56.6",
     "@types/humanize-duration": "^3.27.4",
-    "@types/node": "^22.14.1",
+    "@types/node": "^24.10.9",
     "@typescript-eslint/eslint-plugin": "^8.30.1",
     "@typescript-eslint/parser": "^8.30.1",
     "eslint": "^8.57.0",
@@ -28,7 +28,7 @@
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-prettier": "^5.2.6",
     "prettier": "^3.5.3",
-    "prisma": "^6.6.0",
+    "prisma": "6.19.2",
     "tsup": "^8.4.0",
     "typescript": "^5.8.3"
   },
@@ -47,6 +47,7 @@
   },
   "engines": {
     "npm": ">=10.2.4",
-    "node": ">=20.9.0"
-  }
+    "node": ">=24.13.0"
+  },
+  "packageManager": "yarn@4.12.0"
 }
