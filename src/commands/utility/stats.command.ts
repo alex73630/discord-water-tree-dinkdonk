@@ -12,6 +12,8 @@ import { prisma } from "~/db"
 import { env } from "~/env"
 import { type BaseCommand } from "~/interfaces/base-command.interface"
 
+const MAX_VALID_WAIT_TIME = BigInt(30 * 24 * 60 * 60) // 30 days
+
 export class StatsCommand implements BaseCommand {
 	public data = new SlashCommandBuilder()
 		.setName("stats")
@@ -25,7 +27,7 @@ export class StatsCommand implements BaseCommand {
 
 		let guildId = interaction.guildId
 
-		const guildIdInput = interaction.options.get("guildId")
+		const guildIdInput = interaction.options.get("guild-id")
 
 		if (guildIdInput?.value) {
 			if (!interaction.member) {
@@ -54,7 +56,7 @@ export class StatsCommand implements BaseCommand {
 
 		if (!guildId) {
 			await interaction.reply({
-				content: "Please provide a channel, tag channel, bot and tree name!",
+				content: "Could not determine the guild ID, please try again or provide a guild ID.",
 				ephemeral: true
 			})
 			return
@@ -86,139 +88,109 @@ export class StatsCommand implements BaseCommand {
 			}
 		})
 
-		const waitedTimeTotalRaw = await prisma.$queryRaw<
-			{
-				treeId: number
-				waitedTimeTotal: number
-			}[]
-		>`
-			SELECT "treeId", SUM("waitDelta") as "waitedTimeTotal"
-			FROM "WaitedTime"
-			WHERE "treeId" = ${tree.id}
-			GROUP BY "treeId"`
+		const waitedTimeTotalAggregate = await prisma.waitedTime.aggregate({
+			_sum: {
+				waitDelta: true
+			},
+			_count: {
+				waitDelta: true
+			},
+			where: {
+				treeId: tree.id,
+				waitDelta: {
+					lt: MAX_VALID_WAIT_TIME
+				}
+			}
+		})
 
-		const waitedTimeTotal = waitedTimeTotalRaw[0]
-		let waitedTimeTotalHumanized = "0 seconds"
+		const waitedTimeTotal = waitedTimeTotalAggregate._sum.waitDelta
+			? Number(waitedTimeTotalAggregate._sum.waitDelta)
+			: 0
+		const waitedTimeTotalCount = waitedTimeTotalAggregate._count.waitDelta
+		const waitedTimeTotalHumanized = humanizeDuration(waitedTimeTotal * 1000, {
+			round: true,
+			conjunction: " and ",
+			serialComma: false
+		})
 
-		console.log("waitedTimeTotal", waitedTimeTotal)
+		const averageWaitedTimeAggregate = await prisma.waitedTime.aggregate({
+			_avg: {
+				waitDelta: true
+			},
+			_count: {
+				waitDelta: true
+			},
+			where: {
+				treeId: tree.id,
+				waitDelta: {
+					lt: MAX_VALID_WAIT_TIME
+				}
+			}
+		})
 
-		if (waitedTimeTotal) {
-			const { waitedTimeTotal: time } = waitedTimeTotal
-			console.log("waitedTimeTotal", time)
-			const waitedTimeTotalDuration = humanizeDuration(time * 1000, {
-				round: true,
-				conjunction: " and ",
-				serialComma: false
-			})
-			waitedTimeTotalHumanized = waitedTimeTotalDuration
-		}
+		const averageWaitedTime = averageWaitedTimeAggregate._avg.waitDelta || 0
+		const averageWaitedTimeCount = averageWaitedTimeAggregate._count.waitDelta
+		const averageWaitedTimeHumanized = humanizeDuration(averageWaitedTime * 1000, {
+			round: true,
+			conjunction: " and ",
+			serialComma: false
+		})
 
-		const averageWaitedTimeRaw = await prisma.$queryRaw<
-			{
-				treeId: number
-				averageWaitedTime: number
-			}[]
-		>`
-			SELECT "treeId", AVG("waitDelta") as "averageWaitedTime"
-			FROM "WaitedTime"
-			WHERE "treeId" = ${tree.id}
-			GROUP BY "treeId"`
+		const waitedTimeAverage30DaysAggregate = await prisma.waitedTime.aggregate({
+			_avg: {
+				waitDelta: true
+			},
+			_count: {
+				waitDelta: true
+			},
+			where: {
+				treeId: tree.id,
+				waitDelta: {
+					lt: MAX_VALID_WAIT_TIME
+				},
+				wateredTree: {
+					wateredAt: {
+						gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+					}
+				}
+			}
+		})
 
-		const averageWaitedTime = averageWaitedTimeRaw[0]
-		let averageWaitedTimeHumanized = "0 seconds"
+		const waitedTimeAverage30Days = waitedTimeAverage30DaysAggregate._avg.waitDelta || 0
+		const waitedTimeAverage30DaysCount = waitedTimeAverage30DaysAggregate._count.waitDelta
+		const waitedTimeAverage30DaysHumanized = humanizeDuration(waitedTimeAverage30Days * 1000, {
+			round: true,
+			conjunction: " and ",
+			serialComma: false
+		})
 
-		console.log("averageWaitedTime", averageWaitedTime)
+		const waitedTimeAverage7DaysAggregate = await prisma.waitedTime.aggregate({
+			_avg: {
+				waitDelta: true
+			},
+			_count: {
+				waitDelta: true
+			},
+			where: {
+				treeId: tree.id,
+				waitDelta: {
+					lt: MAX_VALID_WAIT_TIME
+				},
+				wateredTree: {
+					wateredAt: {
+						gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+					}
+				}
+			}
+		})
 
-		if (averageWaitedTime) {
-			const { averageWaitedTime: time } = averageWaitedTime
-			console.log("averageWaitedTime", time)
-			const averageWaitedTimeDuration = humanizeDuration(time * 1000, {
-				round: true,
-				conjunction: " and ",
-				serialComma: false
-			})
-			averageWaitedTimeHumanized = averageWaitedTimeDuration
-		}
-
-		const waitedTimeAverage30DaysRaw = await prisma.$queryRaw<
-			{
-				treeId: number
-				averageWaitedTime: number
-			}[]
-		>`
-			SELECT
-				wt."treeId",
-				AVG(wt."waitDelta") AS "averageWaitedTime"
-			FROM
-				"WaitedTime" AS wt
-				INNER JOIN (
-					SELECT
-						id
-					FROM
-						"WateredTree"
-					WHERE
-						"treeId" = ${tree.id} AND "createdAt" >= NOW() - INTERVAL '30 days'
-				) AS wtr ON wt."wateredTreeId" = wtr.id
-			WHERE
-				wt."treeId" = ${tree.id}
-			GROUP BY
-				wt."treeId";`
-
-		const waitedTimeAverage30Days = waitedTimeAverage30DaysRaw[0]
-		let waitedTimeAverage30DaysHumanized = "0 seconds"
-
-		console.log("waitedTimeAverage30Days", waitedTimeAverage30Days)
-
-		if (waitedTimeAverage30Days) {
-			const { averageWaitedTime: time } = waitedTimeAverage30Days
-			console.log("waitedTimeAverage30Days", time)
-			const waitedTimeAverage30DaysDuration = humanizeDuration(time * 1000, {
-				round: true,
-				conjunction: " and ",
-				serialComma: false
-			})
-			waitedTimeAverage30DaysHumanized = waitedTimeAverage30DaysDuration
-		}
-
-		const waitedTimeAverage7DaysRaw = await prisma.$queryRaw<
-			{
-				treeId: number
-				averageWaitedTime: number
-			}[]
-		>`
-			SELECT
-				wt."treeId",
-				AVG(wt."waitDelta") AS "averageWaitedTime"
-			FROM
-				"WaitedTime" AS wt
-				INNER JOIN (
-					SELECT
-						id
-					FROM
-						"WateredTree"
-					WHERE
-						"treeId" = ${tree.id} AND "createdAt" >= NOW() - INTERVAL '7 days'
-				) AS wtr ON wt."wateredTreeId" = wtr.id
-			WHERE
-				wt."treeId" = ${tree.id}
-			GROUP BY
-				wt."treeId";`
-
-		const waitedTimeAverage7Days = waitedTimeAverage7DaysRaw[0]
-		let waitedTimeAverage7DaysHumanized = "0 seconds"
-
-		console.log("waitedTimeAverage7Days", waitedTimeAverage7Days)
-
-		if (waitedTimeAverage7Days) {
-			const { averageWaitedTime: time } = waitedTimeAverage7Days
-			console.log("waitedTimeAverage7Days", time)
-			const waitedTimeAverage7DaysDuration = humanizeDuration(time * 1000, {
-				round: true,
-				conjunction: " and ",
-				serialComma: false
-			})
-			waitedTimeAverage7DaysHumanized = waitedTimeAverage7DaysDuration
-		}
+		const waitedTimeAverage7Days = waitedTimeAverage7DaysAggregate._avg.waitDelta || 0
+		const waitedTimeAverage7DaysCount = waitedTimeAverage7DaysAggregate._count.waitDelta
+		const waitedTimeAverage7DaysHumanized = humanizeDuration(waitedTimeAverage7Days * 1000, {
+			round: true,
+			conjunction: " and ",
+			serialComma: false
+		})
 
 		const embed = new EmbedBuilder()
 			.setColor(Colors.Blue)
@@ -230,19 +202,19 @@ export class StatsCommand implements BaseCommand {
 				},
 				{
 					name: "Total tracked waited time",
-					value: waitedTimeTotalHumanized
+					value: `${waitedTimeTotalHumanized} (${waitedTimeTotalCount} waterings)`
 				},
 				{
 					name: "Average tracked waited time",
-					value: averageWaitedTimeHumanized
+					value: `${averageWaitedTimeHumanized} (${averageWaitedTimeCount} waterings)`
 				},
 				{
 					name: "Average tracked waited time (last 30 days)",
-					value: waitedTimeAverage30DaysHumanized
+					value: `${waitedTimeAverage30DaysHumanized} (${waitedTimeAverage30DaysCount} waterings)`
 				},
 				{
 					name: "Average tracked waited time (last 7 days)",
-					value: waitedTimeAverage7DaysHumanized
+					value: `${waitedTimeAverage7DaysHumanized} (${waitedTimeAverage7DaysCount} waterings)`
 				}
 			])
 

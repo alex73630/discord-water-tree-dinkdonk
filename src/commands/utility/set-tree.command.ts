@@ -16,7 +16,7 @@ export class SetTreeCommand implements BaseCommand {
 		)
 		.addUserOption((option) => option.setName("bot").setDescription("The tree bot name.").setRequired(true))
 		.addStringOption((option) =>
-			option.setName("tree-name").setDescription("The name of the tree.").setRequired(false)
+			option.setName("tree-name").setDescription("The name of the tree.").setRequired(true)
 		)
 
 	async execute(interaction: Interaction) {
